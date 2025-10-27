@@ -1,9 +1,11 @@
 # Não alterar.
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
-from flask import Flask, jsonify, request
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
+from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
 from flasgger import Swagger
@@ -16,15 +18,22 @@ from jsonschema import ValidationError
 import requests
 import pandas as pd
 
-import services.resources.Extract as webScrapping
+import secrets
 
+from services.resources.Extract import *
+
+extract = Extract()
 
 app = Flask(__name__)
 #app.config.from_object('config')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = secrets.token_hex(32)  # Chave secreta para sessões do Flask
+
+app.config["JWT_SECRET_KEY"] = secrets.token_hex(32)  # Chave secreta para JWT
 
 db = SQLAlchemy(app)
+
 jwt = JWTManager(app)
 
 # Replace basic Swagger init with a richer template including security
@@ -40,21 +49,22 @@ template = {
 }
 
 swagger_config = {
-    "headers": [],
-    "specs": [
-        {
-            "endpoint": 'apispec_1',
-            "route": '/apispec_1.json',
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
+    "title": "API",
+    "uiversion": 3,
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Token JWT: Bearer <token>"
         }
-    ],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/apidocs/"
+    },
+    "security": [{"Bearer": []}],
 }
 
-#swagger = Swagger(app, template=template, config=swagger_config)
+
+
+app.config["SWAGGER"] = swagger_config
 swagger = Swagger(app)
 
 auth = HTTPBasicAuth()
@@ -116,8 +126,7 @@ def get_books():
     security:
       - Bearer: []
     """
-    allbooks: list[str] = webScrapping.get_all_books_scrapping()
-    return jsonify(allbooks), 200
+    return get_books()
 
 
 # Retorna detalhes completos de um livro pelo id específico
@@ -144,10 +153,8 @@ def get_book(book_id):
     security:
       - Bearer: []
     """
-    book = webScrapping.get_book_by_id(book_id)
-    if book:
-        return jsonify(book), 200
-    return jsonify({"error": "Book not found"}), 404
+
+    return get_book(book_id)
 
 
 # Pesquisa livros por título e/ou categoria
@@ -181,21 +188,16 @@ def search_books():
     security:
       - Bearer: []
     """
-    title = request.args.get('title')
-    category = request.args.get('category')
+    title = request.args.get("title", "").lower()
+    category = request.args.get("category", "").lower()
+    books = extract.load_books()
 
-    if not title and not category:
-        return jsonify({"error": "At least one of 'title' or 'category' query params is required"}), 400
+    results = [
+        b for b in books
+        if (title in b["title"].lower() if title else True) and (
+            category in b["category"].lower() if category else True)
+    ]
 
-    # Construir query simples para compatibilidade com a implementação atual do webScrapping
-    query_parts = []
-    if title:
-        query_parts.append(title)
-    if category:
-        query_parts.append(category)
-    combined_query = " ".join(query_parts)
-
-    results = webScrapping.search_books(combined_query)
     return jsonify(results), 200
 
 
@@ -218,8 +220,7 @@ def get_categories():
     security:
       - Bearer: []
     """
-    categories = list(webScrapping.get_categories())
-    return jsonify(categories), 200
+    return get_categories()
 
 
 # Verifica o status da API e a conectivade com os dados
@@ -245,11 +246,13 @@ def get_health():
               type: string
     """
     health = {
-        "status" : "Ok",
-        "database": "developing...", # Aguardo a conexão com o banco para retornar se a conexão está ativa
+        "status": "Ok",
+        "database":
+        "developing...",  # Aguardo a conexão com o banco para retornar se a conexão está ativa
         "timestamp": datetime.now().isoformat()
     }
     return jsonify(health), 200
+
 
 #------------------- Endpoints de insights --------------------
 
@@ -301,10 +304,14 @@ def get_category_stats():
     stats_list = []
     for c in categories:
         stats_list.append({
-            "category": c,
-            "total_books": webScrapping.get_total_books_by_category(c),
-            "average_price": webScrapping.get_average_price_by_category(c),
-            "rating_distribution": webScrapping.get_rating_distribution_by_category(c)
+            "category":
+            c,
+            "total_books":
+            webScrapping.get_total_books_by_category(c),
+            "average_price":
+            webScrapping.get_average_price_by_category(c),
+            "rating_distribution":
+            webScrapping.get_rating_distribution_by_category(c)
         })
     return jsonify(stats_list), 200
 
@@ -368,7 +375,10 @@ def get_price_range():
         books = webScrapping.get_books_by_price_range(min_value, max_value)
         return jsonify(books), 200
     else:
-        return jsonify({"error":"O campo min (mínimo) ou max (máximo) devem ser informados!"}), 400
+        return jsonify({
+            "error":
+            "O campo min (mínimo) ou max (máximo) devem ser informados!"
+        }), 400
 
 
 #------------------- Desafios adicionais (Bonus) --------------------
@@ -382,8 +392,9 @@ def login():
     tags:
       - Auth
     parameters:
-      - name: username
-        in: body
+      - in: body
+        name: body
+        required: true
         schema:
           type: object
           properties:
@@ -402,12 +413,16 @@ def login():
       401:
         description: Credenciais inválidas
     """
-    auth = request.authorization
-    if not auth or not users.get(auth.username) == auth.password:
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    user = db.session.query(User).filter_by(username=username).first()
+    if not user or user.password != password:  # futuramente use hash
         return jsonify({"error": "Invalid credentials"}), 401
 
-    access_token = create_access_token(identity=auth.username)
-    return jsonify(access_token=access_token), 200
+    session["access_token"] = create_access_token(identity=username)
+    return jsonify(access_token=session["access_token"]), 200
 
 
 # Refresh token (mantido em /api/v1/auth/refresh)
@@ -464,7 +479,7 @@ def get_predictions():
 # A etapa 1 e 2 foram mescladas, porque conter dois app.before_request e app.after_request pode gerar conflitos na aplicação
 import logging
 from time import time
-import services.resources.Extract
+from services.database.models.base import User
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -472,23 +487,24 @@ logger = logging.getLogger(__name__)
 
 @app.before_request
 def log_request_info():
+    if "Authorization" not in request.headers and "access_token" in session:
+        request.headers = request.headers.copy()
+        request.headers["Authorization"] = f"Bearer {session['access_token']}"
+
     # Inicia o timer para medir o tempo da requisição
     request.start_time = time()
-    
-    if request.path.startswith("/flasgger") or request.path.startswith("/apispec_"):
+    if request.path.startswith(("/flasgger", "/apispec_")):
         return
-
     # Faz log básico da requisição
     logger.info(
         f"Request: {request.method} {request.url} - Body: {request.get_data()}"
     )
 
-    public_routes = [
-        "/", "/apidocs", "/api/v1/login", "/api/v1/health"
-    ]
+    public_routes = ["/", "/apidocs", "/api/v1/auth/login", "/api/v1/health"]
 
     # Libera tudo que comece com /apidocs ou /flasgger_static (Swagger UI)
-    if request.path.startswith("/apidocs") or request.path.startswith("/flasgger_static"):
+    if request.path.startswith("/apidocs") or request.path.startswith(
+            "/flasgger_static"):
         return
     if request.path in public_routes:
         return
@@ -497,6 +513,7 @@ def log_request_info():
     except exceptions.NoAuthorizationError:
         logger.warning(f"Tentativa de acesso sem token: {request.path}")
         return jsonify({"error": "Missing or invalid token"}), 401
+
 
 @app.after_request
 def log_response_info(response):
@@ -513,7 +530,6 @@ def log_response_info(response):
             duration = time() - request.start_time
             logger.info(f"Response time: {duration:.2f} seconds")
         return response
-
 
 
 #Dashboard simples para visualizar as métricas de uso da API (pode ser uma rota protegida que retorna dados em formato JSON)
