@@ -13,17 +13,11 @@ Este projeto é parte da pós-graduação em Engenharia de Dados e tem como obje
 
 ## 🚀 Como rodar localmente
 ```bash
-git clone https://github.com/mayara-canaver/tech-challenge-1-fiap.git
-cd tech-challenge-1-fiap
+git clone https://github.com/GuilhermeLossio/Tech-Challange-FIAP-1.git
+cd Tech-Challange-FIAP-1
 ```
-
-## 📌 Próximos passos
-Para organização e acompanhamento das atividades, utilizamos o seguinte board no Trello:
-
-[Board](https://trello.com/b/zrnnBjfk/scrum-board)
 
 ## 👥 Contribuidores
 
-[eduardohenrik](https://github.com/eduardohenrik)
 [antonioogom](https://github.com/antonioogom)
 [GuilhermeLossi](https://github.com/GuilhermeLossio)
