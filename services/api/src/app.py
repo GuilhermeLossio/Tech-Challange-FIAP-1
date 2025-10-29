@@ -265,11 +265,13 @@ def get_stats_overview():
     security:
       - Bearer: []
     """
-    stats = {
-        "total_books": webScrapping.get_total_books(),
-        "average_price": webScrapping.get_average_price(),
-        "rating_distribution": webScrapping.get_rating_distribution()
-    }
+    # stats = {
+    #     "total_books": webScrapping.get_total_books(),
+    #     "average_price": webScrapping.get_average_price(),
+    #     "rating_distribution": webScrapping.get_rating_distribution()
+    # }
+
+    stats = {}
     return jsonify(stats), 200
 
 
