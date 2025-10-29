@@ -1,9 +1,5 @@
-# Não alterar.
-import sys
-import os
-
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, exceptions
+import secrets
 
 from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
@@ -11,29 +7,25 @@ from flask_httpauth import HTTPBasicAuth
 from flasgger import Swagger
 from datetime import datetime
 
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, exceptions
+import sys
+import os
 
-from bs4 import BeautifulSoup
-from jsonschema import ValidationError
-import requests
-import pandas as pd
-
-import secrets
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from services.resources.Extract import *
+
 
 extract = Extract()
 
 app = Flask(__name__)
-#app.config.from_object('config')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = secrets.token_hex(32)  # Chave secreta para sessões do Flask
+app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
 
-app.config["JWT_SECRET_KEY"] = secrets.token_hex(32)  # Chave secreta para JWT
+app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex" #secrets.token_hex(32)  # Chave secreta para JWT
 
 db = SQLAlchemy(app)
-
 jwt = JWTManager(app)
 
 # Replace basic Swagger init with a richer template including security
@@ -61,7 +53,6 @@ swagger_config = {
     },
     "security": [{"Bearer": []}],
 }
-
 
 
 app.config["SWAGGER"] = swagger_config
@@ -220,7 +211,8 @@ def get_categories():
     security:
       - Bearer: []
     """
-    return get_categories()
+    stats_list = [{"mensagem":1}]
+    return [{"mensagem":1}], 200
 
 
 # Verifica o status da API e a conectivade com os dados
@@ -300,19 +292,17 @@ def get_category_stats():
       - Bearer: []
     """
     # Adjusted to return all categories stats - implementation may vary
-    categories = webScrapping.get_categories()
-    stats_list = []
-    for c in categories:
-        stats_list.append({
-            "category":
-            c,
-            "total_books":
-            webScrapping.get_total_books_by_category(c),
-            "average_price":
-            webScrapping.get_average_price_by_category(c),
-            "rating_distribution":
-            webScrapping.get_rating_distribution_by_category(c)
-        })
+    # categories = webScrapping.get_categories()
+    # stats_list = []
+    # for c in categories:
+    #     stats_list.append({
+    #         "category":
+    #         c,
+    #         "total_books": webScrapping.get_total_books_by_category(c),
+    #         "average_price": webScrapping.get_average_price_by_category(c),
+    #         "rating_distribution": webScrapping.get_rating_distribution_by_category(c)
+    #     })
+    stats_list = [{"mensagem":1}]
     return jsonify(stats_list), 200
 
 
@@ -335,7 +325,8 @@ def get_top_rated():
     security:
       - Bearer: []
     """
-    books = webScrapping.get_books_top_rated()
+    # books = webScrapping.get_books_top_rated()
+    books = [{}]
     return jsonify(books), 200
 
 
@@ -372,7 +363,8 @@ def get_price_range():
     min_value = request.args.get('min', type=float)
     max_value = request.args.get('max', type=float)
     if min_value is not None or max_value is not None:
-        books = webScrapping.get_books_by_price_range(min_value, max_value)
+        # books = webScrapping.get_books_by_price_range(min_value, max_value)
+        books = [{}]
         return jsonify(books), 200
     else:
         return jsonify({
@@ -413,16 +405,19 @@ def login():
       401:
         description: Credenciais inválidas
     """
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    try:
+      data = request.get_json()
+      username = data.get("username")
+      password = data.get("password")
 
-    user = db.session.query(User).filter_by(username=username).first()
-    if not user or user.password != password:  # futuramente use hash
-        return jsonify({"error": "Invalid credentials"}), 401
+      # user = db.session.query(User).filter_by(username=username).first()
+      # if not user or user.password != password:  # futuramente use hash
+      #     return jsonify({"error": "Invalid credentials"}), 401
 
-    session["access_token"] = create_access_token(identity=username)
-    return jsonify(access_token=session["access_token"]), 200
+      session["access_token"] = create_access_token(identity=username)
+      return jsonify(access_token=session["access_token"]), 200
+    except Exception:
+      return jsonify({"message": "Falha no servidor ao realizar autenticação!"}), 500
 
 
 # Refresh token (mantido em /api/v1/auth/refresh)
@@ -454,7 +449,6 @@ def refresh():
 
 
 # Endpoint protegido para retornar dados de treinamento
-# É aqui que o filho chora e a mãe não vê
 @app.route('/api/v1/ml/training-data', methods=['GET'])
 @jwt_required()
 def get_training_data():

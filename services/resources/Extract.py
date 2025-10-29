@@ -3,7 +3,6 @@ from flask import jsonify, request
 
 CSV_PATH = "data/silver/books.csv"
 
-
 class Extract:
     def load_books(self):
         df = pd.read_csv(CSV_PATH)
