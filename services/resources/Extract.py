@@ -6,7 +6,7 @@ CSV_PATH = "data/silver/books.csv"
 class Extract:
     def load_books(self):
         df = pd.read_csv(CSV_PATH)
-        df["id"] = df["id"].astype(int)
+        df["id"] = df["id"] # o id do livro não é numero inteiro
         return df
 
     def get_books(self):
@@ -35,4 +35,4 @@ class Extract:
     def get_categories(self):
         df = self.load_books()
         categories = sorted(df["category"].dropna().unique().tolist())
-        return jsonify(categories), 200
+        return categories

@@ -13,7 +13,7 @@ import os
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
-from services.resources.Extract import Extract
+from services.resources.Extract import *
 
 
 extract = Extract()
@@ -21,9 +21,9 @@ extract = Extract()
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex1" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
+app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
 
-app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex1" #secrets.token_hex(32)  # Chave secreta para JWT
+app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex" #secrets.token_hex(32)  # Chave secreta para JWT
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
@@ -205,23 +205,14 @@ def get_categories():
       200:
         description: Lista de categorias
         schema:
-          type: object
+          type: array
           items:
-            type: object
+            type: string
     security:
-      - Bearer: {
-      "categories": [{}],
-      "total": 1
-      }
+      - Bearer: []
     """
-    # try:
-    categories = extract.get_categories()
-    return jsonify({
-        "categories": categories,
-        "total": len(categories)
-    }), 200
-    # except Exception:
-    #     return {"msg": "Erro interno ao obter categorias!"}, 500
+    stats_list = [{"mensagem":1}]
+    return [{"mensagem":1}], 200
 
 
 # Verifica o status da API e a conectivade com os dados
