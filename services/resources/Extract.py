@@ -36,3 +36,16 @@ class Extract:
         df = self.load_books()
         categories = sorted(df["category"].dropna().unique().tolist())
         return categories
+    
+    def get_books_top_rated(self):
+        df = self.load_books()
+        books = df[df["rating"] == 5]
+        return books.fillna("").to_dict(orient="records")
+
+    def get_books_price_range(self, min = 0, max = 0):
+        df = self.load_books()
+        if min is not None:
+            df = df[df["raw_price"] >= min]
+        if max is not None:
+            df = df[df["raw_price"] <= max]
+        return df.fillna("").to_dict(orient="records")
