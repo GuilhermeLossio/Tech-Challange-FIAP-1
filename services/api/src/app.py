@@ -21,8 +21,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Guilherme, tem que ajustar esses tokens, secrets.token_hex(32) não estava funcionando, por isso deixei a chave fica ali embaixo
-app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex11" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
-app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex11" #secrets.token_hex(32)  # Chave secreta para JWT
+app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
+app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para JWT
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
@@ -61,14 +61,25 @@ swagger = Swagger(app)
 # Retorna erro amigável quando a rota não existir
 # Antonio G. Quadro
 @app.errorhandler(404)
-def not_found(error):
+def not_found(e):
 	return jsonify({"msg": "A rota informada não existe!"}), 404
 
 # Retorna erro amigável quando o tipo de requisição não corresponde ao do endpoint
+# Antonio G. Quadro
 @app.errorhandler(405)
 def not_allowed(e):
     return jsonify({"msg": "Método não permitido"}), 405
 
+# Erros internos do servidor
+# Antonio G. Quadro
+@app.errorhandler(500)
+def server_error(e):
+	return jsonify({"msg": "Falha ao processar solicitação!"}), 500
+
+# Antonio G. Quadro
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({"msg": "A requisição está malformada ou com parâmetros inválidos."}), 400
 
 #------------------- Endpoints Core --------------------
 
@@ -118,7 +129,7 @@ def get_books():
 
 
 # Retorna detalhes completos de um livro pelo id específico
-@app.route('/api/v1/books/<int:book_id>', methods=['GET'])
+@app.route('/api/v1/books/<string:book_id>', methods=['GET'])
 def get_book(book_id):
 	"""
 	Recupera detalhes de um livro pelo ID
@@ -141,8 +152,10 @@ def get_book(book_id):
 	security:
 		- Bearer: []
 	"""
-
-	return get_book(book_id)
+	book = extract.get_book(book_id)
+	if book:
+		return jsonify(book), 200
+	return jsonify({"msg": "Livro não encontrado!"}), 404
 
 
 # Pesquisa livros por título e/ou categoria
@@ -176,17 +189,13 @@ def search_books():
 	security:
 		- Bearer: []
 	"""
+	
 	title = request.args.get("title", "").lower()
 	category = request.args.get("category", "").lower()
-	books = extract.load_books()
+	
+	results = extract.search_books(title, category)
 
-	results = [
-		b for b in books
-		if (title in b["title"].lower() if title else True) and (
-			category in b["category"].lower() if category else True)
-	]
-
-	return jsonify(results), 200
+	return results.fillna("").to_dict(orient="records"), 200
 
 
 # Lista todas as categorias de livros disponiveis
@@ -282,13 +291,7 @@ def get_stats_overview():
 	security:
 		- Bearer: []
 	"""
-	# stats = {
-	#     "total_books": webScrapping.get_total_books(),
-	#     "average_price": webScrapping.get_average_price(),
-	#     "rating_distribution": webScrapping.get_rating_distribution()
-	# }
-
-	stats = {}
+	stats = extract.get_overview()
 	return jsonify(stats), 200
 
 
@@ -310,19 +313,9 @@ def get_category_stats():
 	security:
 		- Bearer: []
 	"""
-	# Adjusted to return all categories stats - implementation may vary
-	# categories = webScrapping.get_categories()
-	# stats_list = []
-	# for c in categories:
-	#     stats_list.append({
-	#         "category":
-	#         c,
-	#         "total_books": webScrapping.get_total_books_by_category(c),
-	#         "average_price": webScrapping.get_average_price_by_category(c),
-	#         "rating_distribution": webScrapping.get_rating_distribution_by_category(c)
-	#     })
-	stats_list = [{"mensagem":1}]
-	return jsonify(stats_list), 200
+
+	stats_category = extract.get_category_stats()
+	return jsonify(stats_category), 200
 
 
 # Retorna os livros com a melhor avaliação
@@ -466,7 +459,6 @@ def refresh():
 	new_access_token = create_access_token(identity=current_user)
 	return jsonify(access_token=new_access_token), 200
 
-
 #Desafio 2 - Endpoints protegidos para retornar dados de treinamento e previsões do modelo
 # Endpoint protegido para retornar dados de treinamento
 @app.route('/api/v1/ml/training-data', methods=['GET'])
@@ -561,4 +553,4 @@ if __name__ == "__main__":
         db.create_all()
         print("Database tables created.")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

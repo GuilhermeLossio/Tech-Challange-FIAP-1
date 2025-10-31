@@ -17,20 +17,14 @@ class Extract:
         df = self.load_books()
         book = df.loc[df["id"] == book_id]
         if book.empty:
-            return jsonify({"error": "Livro não encontrado"}), 404
-        return jsonify(book.iloc[0].to_dict()), 200
+            return {}
+        return book.iloc[0].to_dict()
 
-    def search_books(self):
-        df = self.load_books()
-        title = request.args.get("title", "").lower()
-        category = request.args.get("category", "").lower()
+    def search_books(self, title = "", category = ""):
+        books = self.load_books()
+        results = books[books["title"].str.contains(title, case=False, na=False) & books["category"].str.contains(category, case=False, na=False)]
 
-        if title:
-            df = df[df["title"].str.lower().str.contains(title, na=False)]
-        if category:
-            df = df[df["category"].str.lower().str.contains(category, na=False)]
-
-        return jsonify(df.to_dict(orient="records")), 200
+        return results
 
     def get_categories(self):
         df = self.load_books()
@@ -49,3 +43,28 @@ class Extract:
         if max is not None:
             df = df[df["raw_price"] <= max]
         return df.fillna("").to_dict(orient="records")
+
+    def get_overview(self, books = None):
+        if books.empty:
+            books = self.load_books()
+        
+        average_price = round(books["raw_price"].mean(), 2)
+        rating_distribution = books["rating"].value_counts().to_dict()
+
+        stats = {
+            "total_books": len(books),
+            "average_price": average_price,
+            "rating_distribution": rating_distribution
+        }
+
+        return stats
+    
+    def get_category_stats(self):
+        categories = self.get_categories()
+        stats_category = {}
+
+        for category in categories:
+            books = self.search_books(category=category)
+            stats_category[category] = self.get_overview(books)
+
+        return stats_category
