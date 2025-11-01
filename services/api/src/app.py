@@ -446,22 +446,35 @@ def login():
 		if not data:
 			return jsonify({"error": "Missing JSON in request"}), 400
   
-		username = data.get("username")
+		username = data.get("username").strip()
 		password = data.get("password")
 	
 		if not username or not password:
 			return jsonify({"error": "Username and password are required"}), 400
+
+		user = User.query.filter_by(username=username).first()
+
+		if not user or not user.check_password(password):
+			logger.warning(f"Tentativa de login falhor para o User:{username}")
+			return jsonify({"error": "Credenciais inválidas"}), 401
+
 
 		# user = db.session.query(User).filter_by(username=username).first()
 		# if not user or user.password != password:  # futuramente use hash
 		#     return jsonify({"error": "Invalid credentials"}), 401
 
 		# para fins de teste, estarei usando que ele aceite qualquer credencial
-		access_token = create_access_token(identity=username, expires_delta=False)
+		access_token = create_access_token(identity={
+                'id': user.id,
+                'username': user.username
+            }, expires_delta=False)
+  
+		logger.info(f"Tentativa de login bem-sucedido para o usuario: {username}")
 
 		session["access_token"] = access_token
 		return jsonify({"access_token": access_token,
-                  "token_type": "bearer"
+                  "token_type": "bearer",
+                  "user": user.to_dict()
         }), 200
 	except Exception:
 		return jsonify({"message": "Falha no servidor ao realizar autenticação!"}), 500
@@ -526,7 +539,17 @@ def invalid_token_response(callback):
 def expired_token_response(callback, payload):
 	return jsonify({"error": "Token has expired"}), 401
 
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return {
+        'id': user['id'],
+        'username': user['username']
+    }
 
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    return User.query.get(identity['id'])
 
 
 
