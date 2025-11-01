@@ -40,17 +40,33 @@ template = {
 }
 
 swagger_config = {
-	"title": "API",
+    "title": "API",
 	"uiversion": 3,
-	"securityDefinitions": {
-		"Bearer": {
-			"type": "apiKey",
-			"name": "Authorization",
-			"in": "header",
-			"description": "Token JWT: Bearer <token>"
-		}
-	},
-	"security": [{"Bearer": []}],
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/apidocs/",
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+        }
+    },
+    "security": [
+        {
+            "Bearer": []
+        }
+    ]
 }
 
 app.config["SWAGGER"] = swagger_config
@@ -394,43 +410,59 @@ def get_price_range():
 @app.route('/api/v1/auth/login', methods=['POST'])
 def login():
 	"""
-	Obter token JWT
-	---
-	tags:
-		- Auth
-	parameters:
-		- in: body
-		  name: body
-		  required: true
-		  schema:
-				type: object
-				properties:
-					username:
-						type: string
-					password:
-						type: string
-	responses:
-		200:
-			description: Token de acesso
-			schema:
-				type: object
-				properties:
-					access_token:
-						type: string
-		401:
-			description: Credenciais inválidas
-	"""
+    Obter token JWT
+    ---
+    tags:
+        - Auth
+    parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+              - username
+              - password
+            properties:
+                username:
+                    type: string
+                    example: "admin"
+                password:
+                    type: string
+                    example: "password"
+    responses:
+        200:
+            description: Token de acesso
+            schema:
+                type: object
+                properties:
+                    access_token:
+                        type: string
+        401:
+            description: Credenciais inválidas
+    """
 	try:
 		data = request.get_json()
+		if not data:
+			return jsonify({"error": "Missing JSON in request"}), 400
+  
 		username = data.get("username")
 		password = data.get("password")
+	
+		if not username or not password:
+			return jsonify({"error": "Username and password are required"}), 400
 
 		# user = db.session.query(User).filter_by(username=username).first()
 		# if not user or user.password != password:  # futuramente use hash
 		#     return jsonify({"error": "Invalid credentials"}), 401
 
-		session["access_token"] = create_access_token(identity=username)
-		return jsonify(access_token=session["access_token"]), 200
+		# para fins de teste, estarei usando que ele aceite qualquer credencial
+		access_token = create_access_token(identity=username, expires_delta=False)
+
+		session["access_token"] = access_token
+		return jsonify({"access_token": access_token,
+                  "token_type": "bearer"
+        }), 200
 	except Exception:
 		return jsonify({"message": "Falha no servidor ao realizar autenticação!"}), 500
 
@@ -478,6 +510,26 @@ def get_predictions():
 	return jsonify({"message": "Previsões retornadas com sucesso."}), 200
 
 
+# Adição de configurações para o JWT_Manager
+# Caso o token não seja fornecido
+@jwt.unauthorized_loader
+def unauthorized_response(callback):
+    return jsonify({"error": "Missing or invalid token"}), 401
+
+# Caso o token esteja inválido
+@jwt.invalid_token_loader
+def invalid_token_response(callback):
+	return jsonify({"error": "Invalid token"}), 401
+
+# Caso o token tenha expirado
+@jwt.expired_token_loader
+def expired_token_response(callback, payload):
+	return jsonify({"error": "Token has expired"}), 401
+
+
+
+
+
 #---------- Desafio 3 : Monitoramento de Analytics ------------------
 #Logs estruturados de todas as chamadas de API (incluindo parâmetros, respostas e tempos de resposta)
 #Metricas de performance da API (tempo médio de resposta, taxa de erro)
@@ -505,18 +557,32 @@ def log_request_info():
 		f"Request: {request.method} {request.url} - Body: {request.get_data()}"
 	)
 
-	public_routes = ["/", "/apidocs", "/api/v1/auth/login", "/api/v1/health"]
-
+	public_routes = [
+        "/", 
+        "/apidocs/", 
+        "/apispec.json",
+        "/flasgger_static/",
+        "/api/v1/auth/login", 
+        "/api/v1/health"
+    ]
+    
 	# Libera tudo que comece com /apidocs ou /flasgger_static (Swagger UI)
-	if request.path.startswith("/apidocs") or request.path.startswith("/flasgger_static"):
+	if any(request.path.startswith(route) for route in public_routes):
 		return
-	if request.path in public_routes:
+
+	if any(request.path.startswith(route) for route in public_routes):
 		return
 	try:
 		verify_jwt_in_request()
 	except exceptions.NoAuthorizationError:
 		logger.warning(f"Tentativa de acesso sem token: {request.path}")
-		return jsonify({"error": "Missing or invalid token"}), 401
+		return jsonify({"error": "Token de acesso não fornecido"}), 401
+	except exceptions.InvalidHeaderError:
+		logger.warning(f"Header de autorização inválido: {request.path}")
+		return jsonify({"error": "Header de autorização inválido"}), 401
+	except Exception as e:
+		logger.error(f"Erro na verificação do token: {e}")
+		return jsonify({"error": "Erro na autenticação"}), 401
 
 
 @app.after_request
@@ -532,7 +598,7 @@ def log_response_info(response):
 	finally:
 		if hasattr(request, "start_time"):
 			duration = time() - request.start_time
-			logger.info(f"Response time: {duration:.2f} seconds")
+			logger.info(f"Request to {request.path} took {duration:.4f} seconds")
 		return response
 
 

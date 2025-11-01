@@ -11,6 +11,10 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(255), nullable=False)  # futuramente armazenar hash
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def check_password(self, password):
+        return self.password == password  # futuramente usar hash
+    
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}')>"
