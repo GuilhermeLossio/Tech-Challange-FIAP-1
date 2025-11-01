@@ -544,14 +544,12 @@ logger = logging.getLogger(__name__)
 
 @app.before_request
 def log_request_info():
-	if "Authorization" not in request.headers and "access_token" in session:
+	""" if "Authorization" not in request.headers and "access_token" in session:
 		request.headers = request.headers.copy()
-		request.headers["Authorization"] = f"Bearer {session['access_token']}"
+		request.headers["Authorization"] = f"Bearer {session['access_token']}" """
 
 	# Inicia o timer para medir o tempo da requisição
 	request.start_time = time()
-	if request.path.startswith(("/flasgger", "/apispec_")):
-		return
 	# Faz log básico da requisição
 	logger.info(
 		f"Request: {request.method} {request.url} - Body: {request.get_data()}"
@@ -567,9 +565,6 @@ def log_request_info():
     ]
     
 	# Libera tudo que comece com /apidocs ou /flasgger_static (Swagger UI)
-	if any(request.path.startswith(route) for route in public_routes):
-		return
-
 	if any(request.path.startswith(route) for route in public_routes):
 		return
 	try:
