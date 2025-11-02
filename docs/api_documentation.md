@@ -1,7 +1,6 @@
-# Challanger API - FIAP
+# Challanger API
 
-A **Challanger API** é uma interface RESTful para acessar dados disponilizados no BooksToScrap, por meio do uso de APIs. Ela foi desenvolvida em **Python (Flask)** com **SQLite** como banco de dados e inclui autenticação via JWT. 
-Ela facilita que terceiros tenham acesso a dados em uma pagina, por meio da extração de dados, e busca aplicar conceitos teoricos, em um ambiente simulado para fins de estudo, mas com reais aplicações em industrias modernas.
+A **Challanger API** é uma interface RESTful para gerenciamento de usuários, autenticação e manipulação de desafios de programação. Ela foi desenvolvida em **Python (Flask)** com **SQLite** como banco de dados e inclui autenticação via JWT.
 
 ---
 
@@ -11,15 +10,6 @@ Ela facilita que terceiros tenham acesso a dados em uma pagina, por meio da extr
 * Criação, listagem e exclusão de desafios
 * Sistema de pontuação e progresso
 * Validação via token JWT
-
----
-
-## 🚀 Modelo executavel  🌕
-O deploy do projeto foi feito utilizando o Railway, e disponibilizado no link : 
-
-https://tech-challange-fiap-1-production.up.railway.app/
-
-
 
 ---
 
@@ -55,15 +45,14 @@ A API utiliza **JWT (JSON Web Token)**. Para obter o token, envie uma requisiç�
 ```json
 {
   "username": "admin",
-  "password": "admin"
-}
+  "password": "admin
 ```
 
 A resposta conterá o token:
 
 ```json
 {
-  "access_token": "Write the acess token"
+  "access_token": "<seu_token_aqui>"
 }
 ```
 
@@ -119,6 +108,7 @@ Authorization: Bearer <seu_token_aqui>
 
 ---
 
+
 ## 🧠 Estrutura do projeto
 
 ```
@@ -165,7 +155,7 @@ Authorization: Bearer <seu_token_aqui>
 ```bash
 curl -X POST http://127.0.0.1:5000/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin"}'
+  -d '{"username":"admin","password":"1234"}'
 ```
 
 ---
@@ -204,10 +194,13 @@ Este projeto está sob a licença MIT — veja o arquivo [LICENSE](LICENSE) para
 
 ---
 
+## 🤝 Contribuições
+
+Sinta-se livre para abrir **issues** e **pull requests**. Toda ajuda é bem-vinda!
+
+---
+
 ### 💬 Contato
 
-- **Antonio Lucas Gomes Quadro**  
-  GitHub: [@antonioogom](https://github.com/antonioogom)
-
-- **Guilherme Ferreira Medeiros Lossio**  
-  GitHub: [@guilhermelossio](https://github.com/guilhermelossio)
+**Autor:** Guilherme Ferreira Medeiros Lossio
+**GitHub:** [@guilhermelossio](https://github.com/guilhermelossio)
