@@ -9,12 +9,15 @@ from flasgger import Swagger
 from datetime import datetime
 import sys
 import os
+from sqlalchemy import create_engine
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from  services.database.models.base import db, User
 from services.resources.Extract import Extract
 
 
 extract = Extract()
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -24,8 +27,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
 app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para JWT
 
-db = SQLAlchemy(app)
+db.init_app(app)
 jwt = JWTManager(app)
+
+
+# Verifica se Admin exite.
+with app.app_context():
+    db.create_all()
+
+    if not User.query.filter_by(username="admin").first():
+        admin = User(username="admin")
+        admin.set_password("admin")
+        db.session.add(admin)
+        db.session.commit()
+        print("Admin adicionado automaticamente.")
+    else:
+        print("Admin já existe.")
+
 
 # Replace basic Swagger init with a richer template including security
 template = {
@@ -446,7 +464,7 @@ def login():
 		if not data:
 			return jsonify({"error": "Missing JSON in request"}), 400
   
-		username = data.get("username").strip()
+		username = (data.get("username") or "").strip()
 		password = data.get("password")
 	
 		if not username or not password:
@@ -476,8 +494,8 @@ def login():
                   "token_type": "bearer",
                   "user": user.to_dict()
         }), 200
-	except Exception:
-		return jsonify({"message": "Falha no servidor ao realizar autenticação!"}), 500
+	except Exception as e:
+		return jsonify({"message": f"Falha no servidor ao realizar autenticação: {str(e)}"}), 500
 
 
 # Refresh token (mantido em /api/v1/auth/refresh)
@@ -559,7 +577,7 @@ def user_lookup_callback(_jwt_header, jwt_data):
 # A etapa 1 e 2 foram mescladas, porque conter dois app.before_request e app.after_request pode gerar conflitos na aplicação
 import logging
 from time import time
-from services.database.models.base import User
+import services.database.models.base
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
