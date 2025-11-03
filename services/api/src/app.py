@@ -26,8 +26,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Guilherme, tem que ajustar esses tokens, secrets.token_hex(32) não estava funcionando, por isso deixei a chave fica ali embaixo
-app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
-app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para JWT
+app.config['SECRET_KEY'] = "9f8d2e7b1a6c4e5f9d0b3a7c8e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
+app.config["JWT_SECRET_KEY"] = "9f8d2e7b1a6c4e5f9d0b3a7c8e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f" #secrets.token_hex(32)  # Chave secreta para JWT
 
 db.init_app(app)
 jwt = JWTManager(app)
