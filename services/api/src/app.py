@@ -136,6 +136,7 @@ def home():
 
 #Retorna lista de livros
 @app.route('/api/v1/books', methods=['GET'])
+@jwt_required()
 def get_books():
 	"""
 	Lista todos os livros
@@ -166,6 +167,7 @@ def get_books():
 
 # Retorna detalhes completos de um livro pelo id específico
 @app.route('/api/v1/books/<string:book_id>', methods=['GET'])
+@jwt_required()
 def get_book(book_id):
 	"""
 	Recupera detalhes de um livro pelo ID
@@ -196,6 +198,7 @@ def get_book(book_id):
 
 # Pesquisa livros por título e/ou categoria
 @app.route('/api/v1/books/search', methods=['GET'])
+@jwt_required()
 def search_books():
 	"""
 	Busca livros por título e/ou categoria
@@ -237,6 +240,7 @@ def search_books():
 # Lista todas as categorias de livros disponiveis
 # Antonio G. Quadro
 @app.route('/api/v1/categories', methods=['GET'])
+@jwt_required()
 def get_categories():
 	"""
 	Lista todas as categorias disponíveis
@@ -357,6 +361,7 @@ def get_category_stats():
 # Retorna os livros com a melhor avaliação
 # Antonio G. Quadro
 @app.route('/api/v1/books/top-rated', methods=['GET'])
+@jwt_required()
 def get_top_rated():
 	"""
 	Lista livros top-rated
@@ -384,6 +389,7 @@ def get_top_rated():
 # Filtra os livros dentro de uma faixa especifica de preço
 # Antonio G. Quadro
 @app.route('/api/v1/books/price-range', methods=['GET'])
+@jwt_required()
 def get_price_range():
 	"""
 	Filtra livros por faixa de preço
