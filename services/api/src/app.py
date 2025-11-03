@@ -1,5 +1,7 @@
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, exceptions
 import secrets
+from datetime import timedelta
+
 
 from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
@@ -481,11 +483,10 @@ def login():
 		# if not user or user.password != password:  # futuramente use hash
 		#     return jsonify({"error": "Invalid credentials"}), 401
 
-		# para fins de teste, estarei usando que ele aceite qualquer credencial
 		access_token = create_access_token(identity={
                 'id': user.id,
                 'username': user.username
-            }, expires_delta=False)
+            }, expires_delta=timedelta(hours=1))
   
 		logger.info(f"Tentativa de login bem-sucedido para o usuario: {username}")
 
