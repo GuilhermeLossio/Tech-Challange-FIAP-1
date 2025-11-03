@@ -26,8 +26,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Guilherme, tem que ajustar esses tokens, secrets.token_hex(32) não estava funcionando, por isso deixei a chave fica ali embaixo
-app.config['SECRET_KEY'] = "9f8d2e7b1a6c4e5f9d0b3a7c8e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
-app.config["JWT_SECRET_KEY"] = "9f8d2e7b1a6c4e5f9d0b3a7c8e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f" #secrets.token_hex(32)  # Chave secreta para JWT
+app.config['SECRET_KEY'] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para sessões do Flask
+app.config["JWT_SECRET_KEY"] = "uma_chave_grande_e_unica_gerada_com_secrets_token_hex2" #secrets.token_hex(32)  # Chave secreta para JWT
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -136,7 +136,6 @@ def home():
 
 #Retorna lista de livros
 @app.route('/api/v1/books', methods=['GET'])
-@jwt_required()
 def get_books():
 	"""
 	Lista todos os livros
@@ -167,7 +166,6 @@ def get_books():
 
 # Retorna detalhes completos de um livro pelo id específico
 @app.route('/api/v1/books/<string:book_id>', methods=['GET'])
-@jwt_required()
 def get_book(book_id):
 	"""
 	Recupera detalhes de um livro pelo ID
@@ -198,7 +196,6 @@ def get_book(book_id):
 
 # Pesquisa livros por título e/ou categoria
 @app.route('/api/v1/books/search', methods=['GET'])
-@jwt_required()
 def search_books():
 	"""
 	Busca livros por título e/ou categoria
@@ -240,7 +237,6 @@ def search_books():
 # Lista todas as categorias de livros disponiveis
 # Antonio G. Quadro
 @app.route('/api/v1/categories', methods=['GET'])
-@jwt_required()
 def get_categories():
 	"""
 	Lista todas as categorias disponíveis
