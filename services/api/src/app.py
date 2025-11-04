@@ -10,11 +10,15 @@ from flasgger import Swagger
 import sys
 import os
 from sqlalchemy import create_engine
+import threading
+import time
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from services.database.models.base import db, User
 from services.resources.Extract import Extract
+import services.scraper.extractors.scrape_books as books_scraper
+
 
 extract = Extract()
 
@@ -520,6 +524,96 @@ def login():
             "message":
             f"Falha no servidor ao realizar autenticação: {str(e)}"
         }), 500
+
+
+# Variável global pra controlar o status do scraping
+scraping_status = {
+    "running": False,
+    "started_by": None,
+    "start_time": None,
+    "end_time": None,
+    "books_scraped": 0,
+    "error": None
+}
+
+
+# Executa mais uma extração, por web Scrapping
+@app.route("/api/v1/scraping/trigger", methods=["POST"])
+@jwt_required()
+def trigger_scraping():
+    """
+    Dispara o scraping de livros manualmente.
+    ---
+    tags:
+        - Scraping
+    responses:
+        200:
+            description: Scraping iniciado com sucesso.
+    """
+    try:
+        current_user = get_jwt_identity()
+
+        if scraping_status["running"]:
+            return jsonify({"message": "Scraping já está em execução!"}), 400
+
+        def run_scraping():
+            try:
+                scraping_status.update({
+                    "running": True,
+                    "started_by": current_user,
+                    "start_time": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "end_time": None,
+                    "error": None,
+                    "books_scraped": 0
+                })
+                print(f"[SCRAPER] Iniciado por {current_user} às {scraping_status['start_time']}")
+
+                # Executa o scraping real
+                books_scraper.main()
+
+                # Após o término, lê o CSV pra contabilizar livros
+                import pandas as pd
+                df = pd.read_csv(books_scraper.OUT_PATH, encoding="utf-8-sig")
+                scraping_status["books_scraped"] = len(df)
+
+                scraping_status["end_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                scraping_status["running"] = False
+                print("[SCRAPER] Finalizado com sucesso!")
+            except Exception as e:
+                scraping_status.update({
+                    "running": False,
+                    "error": str(e),
+                    "end_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                })
+                print(f"[SCRAPER] Erro: {e}")
+
+        # Dispara thread
+        threading.Thread(target=run_scraping, daemon=True).start()
+
+        return jsonify({
+            "message": "Scraping iniciado com sucesso.",
+            "started_by": current_user,
+            "status": "em execução"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Erro ao iniciar scraping: {str(e)}"}), 500
+
+
+@app.route("/api/v1/scraping/status", methods=["GET"])
+@jwt_required()
+def get_scraping_status():
+    """
+    Retorna o status atual do scraping.
+    ---
+    tags:
+        - Scraping
+    responses:
+        200:
+            description: Status atual do scraping.
+    """
+    return jsonify(scraping_status), 200
+
 
 
 # Refresh token (mantido em /api/v1/auth/refresh)
