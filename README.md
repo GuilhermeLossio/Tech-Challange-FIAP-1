@@ -159,11 +159,11 @@ Authorization: Bearer <seu_token_aqui>
 ```
 
 ---
-## 📝 Pipeline 
-```pipeline
-<img width="2707" height="2783" alt="FIAP 1-2025-11-04-034456" src="https://github.com/user-attachments/assets/5a7de55b-2c5f-41cf-8c5a-fa5f9e64308e" />
-```
 
+## 📝 Pipeline 
+<img width="2707" height="2783" alt="FIAP 1-2025-11-04-034456" src="https://github.com/user-attachments/assets/5a7de55b-2c5f-41cf-8c5a-fa5f9e64308e" />
+
+---
 
 ## 🧩 Exemplo de uso com `curl`
 
