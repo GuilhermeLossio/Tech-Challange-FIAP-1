@@ -2,16 +2,13 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import secrets
 from datetime import timedelta, datetime
 
-from flask import Flask, jsonify, request, session, render_template_string
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify, request
 from sqlalchemy import text
-from flask_httpauth import HTTPBasicAuth
 from flasgger import Swagger
-import sys
-import os
-from sqlalchemy import create_engine
 import threading
 import time
+import sys
+import os
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
@@ -26,7 +23,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Guilherme, tem que ajustar esses tokens, secrets.token_hex(32) não estava funcionando, por isso deixei a chave fica ali embaixo
 
 app.config['SECRET_KEY'] = secrets.token_hex(
     32)  # Chave secreta para sessões do Flask
@@ -363,7 +359,6 @@ def get_category_stats():
 # Retorna os livros com a melhor avaliação
 # Antonio G. Quadro
 @app.route('/api/v1/books/top-rated', methods=['GET'])
-@jwt_required()
 def get_top_rated():
     """
 	Lista livros top-rated
@@ -391,7 +386,6 @@ def get_top_rated():
 # Filtra os livros dentro de uma faixa especifica de preço
 # Antonio G. Quadro
 @app.route('/api/v1/books/price-range', methods=['GET'])
-@jwt_required()
 def get_price_range():
     """
 	Filtra livros por faixa de preço
@@ -937,4 +931,4 @@ if __name__ == "__main__":
         db.create_all()
         print("Database tables created.")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=True)
