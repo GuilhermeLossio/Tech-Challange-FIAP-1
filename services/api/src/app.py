@@ -454,7 +454,7 @@ def login():
                     example: "admin"
                 password:
                     type: string
-                    example: "password"
+                    example: "admin"
     responses:
         200:
             description: Token de acesso
