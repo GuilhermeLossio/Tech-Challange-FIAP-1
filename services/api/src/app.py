@@ -563,9 +563,7 @@ def trigger_scraping():
                 print(f"[SCRAPER] Iniciado por {current_user} às {scraping_status['start_time']}")
 
                 # Executa o scraping real
-                print(1)
                 books_scraper.main()
-                print(2)
 
                 # Após o término, lê o CSV pra contabilizar livros
                 import pandas as pd
