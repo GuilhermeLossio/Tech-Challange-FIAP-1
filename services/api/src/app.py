@@ -555,7 +555,7 @@ def trigger_scraping():
                 scraping_status.update({
                     "running": True,
                     "started_by": current_user,
-                    "start_time": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                    "start_time": datetime.now().isoformat(),
                     "end_time": None,
                     "error": None,
                     "books_scraped": 0
@@ -570,14 +570,14 @@ def trigger_scraping():
                 df = pd.read_csv(books_scraper.OUT_PATH, encoding="utf-8-sig")
                 scraping_status["books_scraped"] = len(df)
 
-                scraping_status["end_time"] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                scraping_status["end_time"] = datetime.now().isoformat()
                 scraping_status["running"] = False
                 print("[SCRAPER] Finalizado com sucesso!")
             except Exception as e:
                 scraping_status.update({
                     "running": False,
                     "error": str(e),
-                    "end_time": datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                    "end_time": datetime.now().isoformat()
                 })
                 print(f"[SCRAPER] Erro: {e}")
 
@@ -745,7 +745,7 @@ def dashboard():
             <div class="container">
                 <button class="logout" onclick="logout()">Sair</button>
                 <h1>Bem-vindo, {current_user}!</h1>
-                <p>Autenticado com sucesso em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                <p>Autenticado com sucesso em {datetime.now().isoformat()}</p>
                 
                 <div class="cards">
                     <div class="card">
