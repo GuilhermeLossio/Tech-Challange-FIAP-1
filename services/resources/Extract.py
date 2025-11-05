@@ -45,7 +45,7 @@ class Extract:
         return df.fillna("").to_dict(orient="records")
 
     def get_overview(self, books = None):
-        if not books or books.empty:
+        if books is None or books.empty:
             books = self.load_books()
         
         average_price = round(books["raw_price"].mean(), 2)
