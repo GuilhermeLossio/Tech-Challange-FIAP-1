@@ -555,7 +555,7 @@ def trigger_scraping():
                 scraping_status.update({
                     "running": True,
                     "started_by": current_user,
-                    "start_time": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "start_time": datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
                     "end_time": None,
                     "error": None,
                     "books_scraped": 0
@@ -563,21 +563,23 @@ def trigger_scraping():
                 print(f"[SCRAPER] Iniciado por {current_user} às {scraping_status['start_time']}")
 
                 # Executa o scraping real
+                print(1)
                 books_scraper.main()
+                print(2)
 
                 # Após o término, lê o CSV pra contabilizar livros
                 import pandas as pd
                 df = pd.read_csv(books_scraper.OUT_PATH, encoding="utf-8-sig")
                 scraping_status["books_scraped"] = len(df)
 
-                scraping_status["end_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                scraping_status["end_time"] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
                 scraping_status["running"] = False
                 print("[SCRAPER] Finalizado com sucesso!")
             except Exception as e:
                 scraping_status.update({
                     "running": False,
                     "error": str(e),
-                    "end_time": time.strftime("%Y-%m-%d %H:%M:%S")
+                    "end_time": datetime.now().strftime('%d/%m/%Y %H:%M:%S')
                 })
                 print(f"[SCRAPER] Erro: {e}")
 
@@ -931,4 +933,4 @@ if __name__ == "__main__":
         db.create_all()
         print("Database tables created.")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

@@ -176,6 +176,8 @@ def main():
         category_url = urljoin(BASE, a.get("href"))
         iterate_category(category_name, category_url, rows)
 
+    print("yayy 3")
+
     df = pd.DataFrame(rows).drop_duplicates(subset=["id"], keep="first").reset_index(drop=True)
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_PATH, index=False, encoding="utf-8-sig")
